@@ -1,0 +1,13 @@
+# ClickSenders Robots.txt
+# https://clicksenders.com
+
+User-agent: *
+Allow: /
+
+# Sitemaps
+Sitemap: https://clicksenders.com/sitemap.xml
+
+# Disallow admin/API paths
+Disallow: /api/
+Disallow: /_next/
+Disallow: /admin/
