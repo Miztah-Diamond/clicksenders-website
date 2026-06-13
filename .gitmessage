@@ -1,0 +1,12 @@
+# <type>: <subject>   (Conventional Commits: feat|fix|docs|style|refactor|test|chore)
+#
+# Why / what changed (wrap ~72 cols):
+#
+#
+# --- Attestation footer (required by .githooks/commit-msg; fill every line) ---
+Red-Team:
+Blast-Radius:
+Skill:
+Tests:
+Verified-vs-Assumed:
+# Bare placeholders (todo, none, n/a, -, ...) are rejected. Emergency bypass: HOOKS_SKIP=1 git commit

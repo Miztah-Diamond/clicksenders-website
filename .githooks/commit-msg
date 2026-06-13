@@ -1,0 +1,67 @@
+#!/usr/bin/env bash
+# commit-msg: require a filled-in attestation footer on every commit, so the standing operating
+# rules (RED TEAM, blast-radius, skills-first, tests, verified-vs-assumed) leave a durable trace
+# instead of living only as prose nobody can audit. Bare placeholders are rejected.
+#
+# Exempts merge / revert / fixup! / squash! / amend! commits and in-progress merges.
+# Emergency bypass: HOOKS_SKIP=1 git commit ...
+set -euo pipefail
+[ "${HOOKS_SKIP:-0}" = "1" ] && { echo "⚠ HOOKS_SKIP=1 — skipping commit-msg attestation"; exit 0; }
+
+MSG_FILE="$1"
+# Drop comment lines (git's own '#' comments, scissors, verbose diff comments).
+MSG="$(grep -vE '^[[:space:]]*#' "$MSG_FILE" || true)"
+# Subject = first non-blank line.
+SUBJECT="$(printf '%s\n' "$MSG" | grep -vE '^[[:space:]]*$' | head -n1 || true)"
+
+# Exempt machine-generated / non-authored commit types.
+case "$SUBJECT" in
+  "Merge "*|"Revert "*|"fixup! "*|"squash! "*|"amend! "*)
+    echo "✓ commit-msg: exempt commit type — attestation not required"; exit 0 ;;
+esac
+GITDIR="$(git rev-parse --git-dir)"
+if [ -f "$GITDIR/MERGE_HEAD" ]; then
+  echo "✓ commit-msg: merge in progress — attestation not required"; exit 0
+fi
+
+REQUIRED="Red-Team Blast-Radius Skill Tests Verified-vs-Assumed"
+# A value that is ONLY one of these tokens (optionally trailing '.') counts as not-filled-in.
+PLACEHOLDER='^(todo|tbd|xxx|fixme|placeholder|\.\.\.|na|n/a|none|-|\?+)\.?$'
+
+missing=""
+empty=""
+for key in $REQUIRED; do
+  line="$(printf '%s\n' "$MSG" | grep -iE "^${key}:" | head -n1 || true)"
+  if [ -z "$line" ]; then
+    missing="$missing $key"; continue
+  fi
+  val="$(printf '%s' "$line" | sed -E 's/^[^:]*:[[:space:]]*//; s/[[:space:]]+$//')"
+  low="$(printf '%s' "$val" | tr '[:upper:]' '[:lower:]')"
+  if [ -z "$val" ] || [ "${#val}" -lt 3 ] || printf '%s' "$low" | grep -qE "$PLACEHOLDER"; then
+    empty="$empty $key"
+  fi
+done
+
+if [ -n "$missing" ] || [ -n "$empty" ]; then
+  echo ""
+  echo "✗ commit-msg: attestation footer incomplete."
+  [ -n "$missing" ] && echo "  Missing trailers :$missing"
+  [ -n "$empty" ]   && echo "  Placeholder/empty:$empty"
+  cat <<'EOF'
+
+  Every commit must end with a filled-in attestation footer:
+
+    Red-Team: <what you attacked; what you found or ruled out>
+    Blast-Radius: <files / callers / consumers you checked>
+    Skill: <skill used, or 'skipped — <reason>'>
+    Tests: <what ran + result, or 'none — <why>'>
+    Verified-vs-Assumed: <verified (method); assumed (reason + risk)>
+
+  Bare placeholders (todo, tbd, none, n/a, -, ...) are rejected — write a real answer.
+  Emergency bypass: HOOKS_SKIP=1 git commit ...
+EOF
+  exit 1
+fi
+
+echo "✓ commit-msg: attestation present"
+exit 0

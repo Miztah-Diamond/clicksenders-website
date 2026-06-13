@@ -1,0 +1,27 @@
+#!/usr/bin/env bash
+# Next.js pre-push: block direct push to main, then a LIGHT gate — typecheck + lint only.
+# Deliberately light: heavy/DB-backed test suites belong in CI (on the PR), not in the push
+# path. A slow or environment-dependent pre-push trains people to reach for HOOKS_SKIP=1, which
+# defeats the whole point (LaundriPOS lesson). Keep this fast and offline-friendly.
+set -euo pipefail
+[ "${HOOKS_SKIP:-0}" = "1" ] && { echo "⚠ HOOKS_SKIP=1 — skipping pre-push"; exit 0; }
+ROOT="$(git rev-parse --show-toplevel)"; cd "$ROOT"
+
+# 1) block direct push to protected branches
+protected="main master"
+while read -r local_ref local_sha remote_ref remote_sha; do
+  [ -z "${remote_ref:-}" ] && continue
+  branch="${remote_ref#refs/heads/}"
+  for p in $protected; do
+    if [ "$branch" = "$p" ]; then
+      echo "✗ Direct push to '$p' is blocked. Open a PR from a feature/chore branch."
+      echo "  Emergency override: HOOKS_SKIP=1 git push"
+      exit 1
+    fi
+  done
+done
+
+# 2) LIGHT correctness gate: typecheck + lint. Tests run in CI on the PR.
+if grep -q '"typecheck"' package.json 2>/dev/null; then npm run typecheck; else npx --no-install tsc --noEmit; fi
+if grep -q '"lint"' package.json 2>/dev/null; then npm run lint; else npx --no-install next lint; fi
+echo "✓ pre-push passed (typecheck + lint). Full test suite runs in CI on the PR."

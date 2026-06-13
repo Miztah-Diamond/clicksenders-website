@@ -1,0 +1,5 @@
+# Shell hooks and scripts MUST stay LF in the working tree on every platform.
+# CRLF (the Windows autocrlf default) breaks bash: "bad interpreter: .../bash\r".
+.githooks/** text eol=lf
+*.sh text eol=lf
+.gitmessage text eol=lf

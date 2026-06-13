@@ -123,6 +123,33 @@ refactor: extract reusable Button component
 chore: update dependencies
 ```
 
+### Git Hooks & CI
+
+`npm install` activates the committed hooks in `.githooks/` (via the `prepare` script, which sets
+`git config core.hooksPath .githooks` — no Husky dependency). If you skipped install or hooks
+aren't firing, run that command once manually.
+
+- **pre-commit** — secret scan + ESLint on staged files.
+- **pre-push** — blocks direct pushes to `main`/`master`, then runs `tsc --noEmit` + lint (light by
+  design; the full test suite runs in CI).
+- **commit-msg** — requires an attestation footer on every commit (see below).
+
+Every commit message must end with a filled-in footer (the `.gitmessage` template prefills it; run
+`git config commit.template .gitmessage` to load it in your editor):
+
+```
+Red-Team: <what you attacked; what you found or ruled out>
+Blast-Radius: <files / callers / consumers you checked>
+Skill: <skill used, or 'skipped — <reason>'>
+Tests: <what ran + result, or 'none — <why>'>
+Verified-vs-Assumed: <verified (method); assumed (reason + risk)>
+```
+
+Bare placeholders (`todo`, `none`, `n/a`, `-`, `...`) are rejected. Merge/revert commits are exempt.
+Emergency bypass for any hook: `HOOKS_SKIP=1 git commit ...` / `HOOKS_SKIP=1 git push`.
+
+CI (`.github/workflows/ci.yml`) runs `tsc` + lint (+ tests when a `test` script exists) on every PR.
+
 ### Pull Request Process
 
 1. Branch from `main`

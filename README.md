@@ -217,6 +217,8 @@ NEXT_PUBLIC_SITE_URL=https://clicksenders.com
 | `tailwind.config.ts` | Design tokens, custom animations, colors |
 | `tsconfig.json` | TypeScript paths (`@/*` → `./src/*`) |
 | `postcss.config.js` | PostCSS plugins (Tailwind, Autoprefixer) |
+| `.githooks/` | Committed git hooks (secret scan, lint, push protection, commit attestation) — activated by `npm install` |
+| `.github/workflows/ci.yml` | CI: typecheck + lint (+ tests if present) on every PR |
 
 ---
 
@@ -254,9 +256,10 @@ See [CONTRIBUTING.md](CONTRIBUTING.md) for development guidelines.
 1. Fork the repository
 2. Create a feature branch: `git checkout -b feature/your-feature`
 3. Make your changes
-4. Run linting: `npm run lint`
-5. Commit with conventional commits: `feat: add new section`
-6. Push and open a Pull Request
+4. Run `npm install` once so the git hooks activate (lint/secret/push/commit gates)
+5. Run linting: `npm run lint`
+6. Commit with conventional commits **plus the attestation footer** the `commit-msg` hook requires (see [CONTRIBUTING.md](CONTRIBUTING.md#git-hooks--ci))
+7. Push to a feature branch (direct pushes to `main` are blocked) and open a Pull Request
 
 ---
 
