@@ -51,6 +51,27 @@ this gap.
   literally automatic on `git clone` alone. Documented in CONTRIBUTING.
 - The old `.git/hooks/*` copies are now dormant (superseded by `core.hooksPath`) and can be deleted.
 
+## Rollout status (2026-06-14)
+
+Implemented on branch `chore/foundation-hooks-ci-skills` → draft PR #1 (not merged; owner sign-off pending).
+
+- **Done & verified:** all four hooks committed at mode `100755` with `#!/usr/bin/env bash` shebangs
+  and LF endings; verified *executing through git itself* on Windows Git 2.53 (`git hook run`, a real
+  commit, and a real `git push --dry-run origin HEAD:main` that hit the main-block). CI ran **green**
+  on PR #1; the test step logged a loud "no test script" notice rather than a silent skip.
+- **Pending owner action — required-status-check on `main` is NOT yet enabled.** Both conditions are
+  met (public repo → free Actions; green run confirmed) and the exact check context is
+  `typecheck + lint (+ tests if present)`. Autonomous enablement was intentionally blocked as a
+  shared-`main` governance change; the owner enables it with:
+  ```bash
+  gh api -X PUT repos/Miztah-Diamond/clicksenders-website/branches/main/protection --input - <<'JSON'
+  {"required_status_checks":{"strict":false,"checks":[{"context":"typecheck + lint (+ tests if present)"}]},"enforce_admins":false,"required_pull_request_reviews":null,"restrictions":null}
+  JSON
+  ```
+  Undo: `gh api -X DELETE repos/Miztah-Diamond/clicksenders-website/branches/main/protection`.
+- **Housekeeping:** the old `.git/hooks/*` copies are dormant (superseded by `core.hooksPath`) and may
+  be deleted.
+
 ## Alternatives considered
 
 - **Husky** — rejected: adds a dependency for what `core.hooksPath` already does natively.

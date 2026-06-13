@@ -31,3 +31,15 @@ PRs; skills-first and standing devil's-advocate written into `CLAUDE.md`/`AGENTS
 
 - **Local-only enforcement isn't enforcement.** Anything in `.git/hooks/` dies on clone. Track it
   (`.githooks/` + `core.hooksPath`) so a fresh checkout + `npm install` gets the guardrails.
+
+- **DawaHQ — a hook on Windows needs BOTH a shebang and the exec bit, in LF.** DawaHQ's pre-commit
+  failed with "Exec format error" because it was missing `#!/usr/bin/env bash`. Three things must all
+  hold or a hook silently fails to run on Windows Git:
+  1. First line is exactly `#!/usr/bin/env bash` (so git knows how to exec it).
+  2. Committed with the executable bit (`git update-index --chmod=+x` → mode `100755`; Windows won't
+     set it for you).
+  3. **LF line endings** — a `\r` after the shebang (`...bash\r`) becomes `bad interpreter`. Enforce
+     with `.gitattributes` (`.githooks/** text eol=lf`).
+  Verify by *executing through git itself* (`git hook run <name>`, a real commit, a `git push
+  --dry-run`), not just `bash file` — only the git path surfaces exec-format/shebang failures the way
+  a real hook invocation does. All four hooks here were verified this way on Windows Git 2.53.
