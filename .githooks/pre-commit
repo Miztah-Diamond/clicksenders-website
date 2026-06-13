@@ -1,0 +1,19 @@
+#!/usr/bin/env bash
+# Next.js pre-commit: secret scan + lint/format staged files. Fast, local first line of defense.
+set -euo pipefail
+[ "${HOOKS_SKIP:-0}" = "1" ] && { echo "⚠ HOOKS_SKIP=1 — skipping pre-commit"; exit 0; }
+ROOT="$(git rev-parse --show-toplevel)"
+
+# 1) secrets
+bash "$ROOT/.githooks/secret-scan.sh"
+
+# 2) lint-staged if configured, else eslint on staged ts/tsx/js/jsx
+if [ -f "$ROOT/package.json" ] && grep -q '"lint-staged"' "$ROOT/package.json" 2>/dev/null; then
+  npx --no-install lint-staged
+else
+  files=$(git diff --cached --name-only --diff-filter=ACM | grep -E '\.(ts|tsx|js|jsx)$' || true)
+  if [ -n "$files" ]; then
+    echo "$files" | xargs npx --no-install eslint --max-warnings 0
+  fi
+fi
+echo "✓ pre-commit passed"
